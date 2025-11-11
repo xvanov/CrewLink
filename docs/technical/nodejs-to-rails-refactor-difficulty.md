@@ -534,3 +534,4 @@ Answer these questions:
 - If you prefer Rails conventions → **Rails from start** (but accept PRD-2 challenges)
 - **Don't plan to refactor** - It's expensive either direction
 
+
