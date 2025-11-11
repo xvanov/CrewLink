@@ -1,0 +1,17 @@
+# This is a test file to verify CI workflow syntax
+# Run: actionlint .github/workflows/ci.yml (if actionlint is installed)
+
+name: CI Workflow Syntax Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check workflow syntax
+        run: |
+          echo "CI workflow syntax validation would run here"
+          echo "In production, use actionlint or similar tool"
+

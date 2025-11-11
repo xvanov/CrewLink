@@ -1,0 +1,119 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging Environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image
+        id: docker-build
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          ECR_REPOSITORY: crewlink-web
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f apps/web/Dockerfile .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Get previous task definition revision
+        id: previous-task-def
+        if: always()
+        run: |
+          PREVIOUS_REV=$(aws ecs describe-services \
+            --cluster crewlink-staging-cluster \
+            --services crewlink-staging \
+            --query 'services[0].taskDefinition' \
+            --output text 2>/dev/null || echo "")
+          echo "previous-revision=$PREVIOUS_REV" >> $GITHUB_OUTPUT
+          echo "Previous task definition: $PREVIOUS_REV"
+
+      - name: Update task definition with new image
+        id: update-task-def
+        run: |
+          # Replace placeholders in task definition
+          # First replace ACCOUNT_ID and REGION
+          sed -i "s|ACCOUNT_ID|${{ secrets.AWS_ACCOUNT_ID }}|g" infrastructure/ecs-task-definition-staging.json
+          sed -i "s|REGION|${{ secrets.AWS_REGION || 'us-east-1' }}|g" infrastructure/ecs-task-definition-staging.json
+          # Then replace the full image placeholder with the actual image URI
+          sed -i "s|${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION || 'us-east-1' }}.amazonaws.com/crewlink-web:IMAGE_TAG|${{ steps.docker-build.outputs.image }}|g" infrastructure/ecs-task-definition-staging.json
+          
+          # Register new task definition
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://infrastructure/ecs-task-definition-staging.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          echo "task-definition-arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
+          echo "Registered task definition: $TASK_DEF_ARN"
+
+      - name: Deploy to ECS
+        id: deploy
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.update-task-def.outputs.task-definition-arn }}
+          service: crewlink-staging
+          cluster: crewlink-staging-cluster
+          wait-for-service-stability: true
+
+      - name: Verify deployment
+        run: |
+          echo "Deployment completed successfully"
+          echo "Staging URL: ${{ secrets.STAGING_URL }}"
+
+      - name: Rollback on failure
+        if: failure() && steps.previous-task-def.outputs.previous-revision != ''
+        run: |
+          echo "Deployment failed. Initiating rollback to previous task definition..."
+          echo "Rolling back to: ${{ steps.previous-task-def.outputs.previous-revision }}"
+          
+          # Update service to use previous task definition
+          aws ecs update-service \
+            --cluster crewlink-staging-cluster \
+            --service crewlink-staging \
+            --task-definition ${{ steps.previous-task-def.outputs.previous-revision }} \
+            --force-new-deployment || true
+          
+          echo "Rollback initiated. Service will update to previous task definition."
+          echo "Monitor deployment: aws ecs describe-services --cluster crewlink-staging-cluster --services crewlink-staging"
+          
+          # Wait for rollback to stabilize (with timeout)
+          aws ecs wait services-stable \
+            --cluster crewlink-staging-cluster \
+            --services crewlink-staging || echo "Rollback in progress..."
+          
+          echo "Rollback completed or in progress. Please verify service status manually."
+

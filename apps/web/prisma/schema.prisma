@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  FOREMAN
+  CREW_MEMBER
+  CONSTRUCTION_MANAGER
+  FIELD_TECHNICIAN
+  PROJECT_COORDINATOR
+}
+
+enum ItemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String
+  passwordHash      String
+  role              UserRole
+  languagePreference String  @default("en")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations (forward references for future models)
+  performanceScores  PerformanceScore[] @relation("UserPerformanceScores")
+  assignedItems      ChecklistItem[]
+  projectAssignments UserProjectAssignment[]
+  refreshTokens      RefreshToken[]     @relation("UserRefreshTokens")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  checklists  Checklist[]
+  assignments UserProjectAssignment[]
+}
+
+model Checklist {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project Project        @relation(fields: [projectId], references: [id])
+  items   ChecklistItem[]
+}
+
+model ChecklistItem {
+  id          String     @id @default(cuid())
+  checklistId String
+  description String
+  status      ItemStatus @default(NOT_STARTED)
+  assignedToId String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  checklist  Checklist @relation(fields: [checklistId], references: [id])
+  assignedTo User?     @relation(fields: [assignedToId], references: [id])
+}
+
+model UserProjectAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  // Unique constraint to prevent duplicate assignments
+  @@unique([userId, projectId])
+}
+
+// Forward reference model (to be fully defined in Epic 2)
+model PerformanceScore {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation("UserPerformanceScores", fields: [userId], references: [id])
+}
+
+// Refresh token model for 7-day refresh token mechanism
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  // Relations
+  user User @relation("UserRefreshTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+

@@ -1,0 +1,219 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Testing
+/coverage
+*.lcov
+.nyc_output
+test-results/
+playwright-report/
+playwright/.cache/
+*.trace.zip
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.pem
+
+# Production
+/build
+/dist
+/.vercel
+/.netlify
+
+# Misc
+.DS_Store
+*.pem
+*.log
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# Local env files
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma
+# Keep schema.prisma and migrations, but ignore generated client
+# Uncomment if you want to ignore generated Prisma client:
+# node_modules/.prisma/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+.fleet/
+.history/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.loadpath
+.externalToolBuilders/
+.buildpath
+.target
+.tern-project
+.idea_modules/
+*.sublime-project
+*.sublime-workspace
+.vscode-test
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# React Native
+# React Native Metro bundler cache
+.metro/
+.metro-health-check*
+
+# React Native / Expo
+.expo/
+.expo-shared/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+.expo/
+.expo-shared/
+
+# iOS
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/*.xcuserdata
+ios/.xcode.env.local
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+ios/.xcode.env.local
+
+# Android
+android/app/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+*.apk
+*.aab
+*.ap_
+*.aab
+.gradle/
+local.properties
+*.iml
+.idea/
+*.hprof
+.cxx/
+*.keystore
+!debug.keystore
+
+# AWS
+.aws-sam/
+samconfig.toml
+*.zip
+
+# Terraform / Infrastructure
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example
+.terraform.tfstate.lock.info
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
+
+# BMAD ephemeral files
+.bmad-ephemeral/
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
+# Coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.vercel/
+
+# Package manager locks (optional - uncomment if you want to ignore)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
